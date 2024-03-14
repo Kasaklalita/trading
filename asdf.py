@@ -1,4 +1,5 @@
 import pandas as pd
+import datetime
 import pandas_ta as ta
 from enum import Enum
 
@@ -17,7 +18,7 @@ class Swap(Enum):
 
 class Signal:
     type: SignalType
-    time: int
+    datetime: str
     entry_point: int
     take_profit: int
     stop_loss: int
@@ -25,22 +26,24 @@ class Signal:
     def __init__(
         self,
         type=SignalType.HOLD,
-        time: int = 0,
+        unix: int = 0,
+        datetime: str = "",
         entry_point: int = 0,
         take_profit: int = 0,
         stop_loss: int = 0,
     ):
         self.type = type
-        self.time = time
+        self.unix = unix
+        self.datetime = datetime
         self.entry_point = entry_point
         self.take_profit = take_profit
         self.stop_loss = stop_loss
 
     def __str__(self):
-        return f"Time: {self.time}, type: {self.type}, entry: {self.entry_point}, tp: {self.take_profit}, sl: {self.stop_loss}"
+        return f"Time: {self.datetime}, type: {self.type}, entry: {self.entry_point}, tp: {self.take_profit}, sl: {self.stop_loss}"
 
     def __repr__(self):
-        return f"Time: {self.time}, type: {self.type}, entry: {self.entry_point}, tp: {self.take_profit}, sl: {self.stop_loss}"
+        return f"Time: {self.datetime}, type: {self.type}, entry: {self.entry_point}, tp: {self.take_profit}, sl: {self.stop_loss}"
 
 
 def get_dataframe(session, symbol, interval, limit) -> pd.DataFrame:
@@ -53,21 +56,27 @@ def get_dataframe(session, symbol, interval, limit) -> pd.DataFrame:
         dtype="float64",
     )
     df = df[::-1]
-    df.index = df["time"].values.astype(int)
-    # del df["time"]
+    df.index = pd.to_numeric(df["time"]).div(1000).values.astype(int)
     df.apply(pd.to_numeric)
-    df["time"] = df["time"].astype(int)
+    df["datetime"] = pd.to_datetime(df["time"].div(1000), unit="s").dt.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    df.rename(columns={"time": "unix"}, inplace=True)
+    df["unix"] = df["unix"].div(1000).values.astype(int)
+    # df["time"] = df["time"].astype(int)
     return df
 
 
 def get_full_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    # calculate MACD values
     df.ta.macd(close="close", fast=12, slow=26, append=True)
-    # calculating the 200 EMA
-    # df["EMA200"] = ta.ema(df["close"], length=200)
     df.ta.ema(length=200, append=True)
-    df.rename(columns={"EMA_200": "EMA200"}, inplace=True)
     return df
+
+
+def get_readable_time(unix_time: int):
+    # Convert Unix time to a datetime object
+    dt = datetime.datetime.fromtimestamp(int(unix_time // 1000))
+    return dt
 
 
 def calculate_swap(prev_h: int, cur_h) -> Swap:
@@ -92,7 +101,7 @@ def get_signal_for_candle(
         df["MACDs_12_26_9"].iloc[i - 1],
     )
     cur_price = df["close"].iloc[i - 1]
-    cur_200ema = df["EMA200"].iloc[i - 1]
+    cur_200ema = df["EMA_200"].iloc[i - 1]
     take_profit_diff = cur_price * take_profit / 100
     stop_loss_diff = cur_price * stop_loss / 100
     # Добавить условие
@@ -105,7 +114,8 @@ def get_signal_for_candle(
         if swap == Swap.UP and (cur_price > cur_200ema) and cur_MACD < 0:
             return Signal(
                 SignalType.BUY,
-                df["time"].iloc[i - 1],
+                df["unix"].iloc[i - 1],
+                df["datetime"].iloc[i - 1],
                 cur_price,
                 cur_price + take_profit_diff,
                 cur_price - stop_loss_diff,

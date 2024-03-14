@@ -48,12 +48,12 @@ def main():
     for signal in signals:
         if signal.type == SignalType.BUY:
             plt.scatter(
-                signal.time, signal.entry_point, color="green", s=100, marker="o"
+                signal.unix, signal.entry_point, color="green", s=100, marker="o"
             )
         else:
-            plt.scatter(signal.time, signal.entry_point, color="red", s=100, marker="o")
-    plt.legend()
-    plt.show()
+            plt.scatter(signal.unix, signal.entry_point, color="red", s=100, marker="o")
+    # plt.legend()
+    # plt.show()
 
 
 if __name__ == "__main__":
