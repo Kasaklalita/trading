@@ -92,8 +92,8 @@ def get_signal_for_candle(
     df: pd.DataFrame,
     i: int = 0,
     opened_position: bool = False,
-    take_profit: int = 10,
-    stop_loss: int = 5,
+    take_profit: float = 10,
+    stop_loss: float = 5,
 ):
     prev_h, cur_h = df["MACDh_12_26_9"].iloc[i - 2], df["MACDh_12_26_9"].iloc[i - 1]
     cur_MACD, cur_signal = (
@@ -109,7 +109,7 @@ def get_signal_for_candle(
     # 2. Пересечение линий
     # 3. Цена ниже 200 EMA
     swap = calculate_swap(prev_h, cur_h)
-    if True:
+    if not opened_position:
         # OPEN LONG
         if swap == Swap.UP and (cur_price > cur_200ema) and cur_MACD < 0:
             return Signal(
