@@ -2,11 +2,12 @@ import pandas as pd
 import pandas_ta as ta
 from enum import Enum
 from copy import deepcopy
+from constants import TAKE_PROFIT, STOP_LOSS, INTERVAL, LIMIT
 
 
 class SignalType(Enum):
-    BUY = 1
-    SELL = 2
+    LONG = 1
+    SHORT = 2
     HOLD = 3
 
 
@@ -18,14 +19,17 @@ class Swap(Enum):
 
 class Signal:
     type: SignalType
+    symbol: str
     datetime: str
     entry_point: int
     take_profit: int
     stop_loss: int
+    unix: int
 
     def __init__(
         self,
         type=SignalType.HOLD,
+        symbol: str = '',
         unix: int = 0,
         datetime: str = "",
         entry_point: int = 0,
@@ -33,6 +37,7 @@ class Signal:
         stop_loss: int = 0,
     ):
         self.type = type
+        self.symbol = symbol
         self.unix = unix
         self.datetime = datetime
         self.entry_point = entry_point
@@ -40,10 +45,43 @@ class Signal:
         self.stop_loss = stop_loss
 
     def __str__(self):
-        return f"Time: {self.datetime}, type: {self.type}, entry: {self.entry_point}, tp: {self.take_profit}, sl: {self.stop_loss}"
+        emoji = ''
+        if self.type == SignalType.LONG:
+            emoji = '🟩 LONG'
+        elif self.type == SignalType.SHORT:
+            emoji = '🟥 SHORT'
+        else:
+            emoji = '🔷 HOLD'
+        return f"{self.symbol} {emoji}\nTime: {self.datetime}\nentry: {self.entry_point}\ntp: {self.take_profit}\nsl: {self.stop_loss}"
 
     def __repr__(self):
-        return f"Time: {self.datetime}, type: {self.type}, entry: {self.entry_point}, tp: {self.take_profit}, sl: {self.stop_loss}"
+        emoji = ''
+        if self.type == SignalType.LONG:
+            emoji = '🟩 LONG'
+        elif self.type == SignalType.SHORT:
+            emoji = '🟥 SHORT'
+        else:
+            emoji = '🔷 HOLD'
+        return f"{self.symbol} {emoji}\nTime: {self.datetime}\nentry: {self.entry_point}\ntp: {self.take_profit}\nsl: {self.stop_loss}"
+
+
+def analyze_symbol(session, bot, symbol: str, interval: int = INTERVAL, limit: int = LIMIT, take_profit: int = TAKE_PROFIT, stop_loss: int = STOP_LOSS):
+    df = get_dataframe(session, symbol, interval, limit)
+
+    for i in range(0, len(df.index) - 2):
+        signal: Signal = get_macd_signal(
+            df,
+            i,
+            take_profit=take_profit,
+            stop_loss=stop_loss,
+            symbol=symbol
+        )
+        if signal.type == SignalType.LONG:
+            bot.notify(signal.__str__())
+        elif signal.type == SignalType.SHORT:
+            bot.notify(signal.__str__())
+        else:
+            pass
 
 
 def get_dataframe(session, symbol, interval, limit) -> pd.DataFrame:
@@ -63,7 +101,6 @@ def get_dataframe(session, symbol, interval, limit) -> pd.DataFrame:
     )
     df.rename(columns={"time": "unix"}, inplace=True)
     df["unix"] = df["unix"].div(1000).values.astype(int)
-    # df["time"] = df["time"].astype(int)
     return df
 
 
@@ -81,6 +118,7 @@ def get_macd_signal(
     i: int = 0,
     take_profit: float = 10,
     stop_loss: float = 5,
+    symbol: str = ''
 ):
     df = deepcopy(df)
     df.ta.macd(close="close", fast=12, slow=26, append=True)
@@ -94,14 +132,12 @@ def get_macd_signal(
     cur_200ema = df["EMA_200"].iloc[i - 1]
     take_profit_diff = cur_price * take_profit / 100
     stop_loss_diff = cur_price * stop_loss / 100
-    # Добавить условие
-    # 2. Пересечение линий
-    # 3. Цена ниже 200 EMA
     swap = calculate_swap(prev_h, cur_h)
 
     if swap == Swap.UP and (cur_price > cur_200ema) and cur_MACD < 0:
         return Signal(
-            SignalType.BUY,
+            SignalType.LONG,
+            symbol,
             df["unix"].iloc[i - 1],
             df["datetime"].iloc[i - 1],
             cur_price,
@@ -110,7 +146,8 @@ def get_macd_signal(
         )
     elif swap == Swap.DOWN and (cur_price < cur_200ema) and cur_MACD > 0:
         return Signal(
-            SignalType.SELL,
+            SignalType.SHORT,
+            symbol,
             df["unix"].iloc[i - 1],
             df["datetime"].iloc[i - 1],
             cur_price,
@@ -120,7 +157,7 @@ def get_macd_signal(
         # OPEN SHORT
         # if swap == Swap.DOWN and (cur_price < cur_200ema) and cur_MACD > 0:
         #     return Signal(
-        #         SignalType.SELL,
+        #         SignalType.SHORT,
         #         df["time"].iloc[i - 1],
         #         cur_price,
         #         cur_price - take_profit_diff,
@@ -130,7 +167,7 @@ def get_macd_signal(
     #     # CLOSE LONG
     #     if swap == Swap.DOWN:
     #         return Signal(
-    #             SignalType.SELL,
+    #             SignalType.SHORT,
     #             df["time"].iloc[i - 1],
     #             cur_price,
     #             cur_price - take_profit_diff,
@@ -139,7 +176,7 @@ def get_macd_signal(
     # CLOSE SHORT
     # if swap == Swap.UP:
     #     return Signal(
-    #         SignalType.BUY,
+    #         SignalType.LONG,
     #         df["time"].iloc[i - 1],
     #         cur_price,
     #         cur_price + take_profit_diff,
