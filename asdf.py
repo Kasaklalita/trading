@@ -72,13 +72,6 @@ def get_full_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.ta.ema(length=200, append=True)
     return df
 
-
-def get_readable_time(unix_time: int):
-    # Convert Unix time to a datetime object
-    dt = datetime.datetime.fromtimestamp(int(unix_time // 1000))
-    return dt
-
-
 def calculate_swap(prev_h: int, cur_h) -> Swap:
     swap = Swap.STALL
     if prev_h < 0 and cur_h > 0:
