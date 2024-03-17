@@ -1,3 +1,4 @@
+altgraph==0.17.4
 appdirs==1.4.4
 asttokens==2.4.1
 attrs==23.2.0
@@ -47,8 +48,12 @@ pure-eval==0.2.2
 pybit==5.6.2
 pycryptodome==3.20.0
 Pygments==2.17.2
+pyinstaller==6.5.0
+pyinstaller-hooks-contrib==2024.3
 pyparsing==3.1.1
+pyTelegramBotAPI==4.16.1
 python-dateutil==2.8.2
+python-decouple==3.8
 pytz==2023.3.post1
 pyzmq==25.1.2
 referencing==0.33.0
@@ -57,6 +62,7 @@ rpds-py==0.18.0
 six==1.16.0
 soupsieve==2.5
 stack-data==0.6.3
+telebot==0.0.5
 tenacity==8.2.3
 tornado==6.4
 tqdm==4.66.1
