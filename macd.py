@@ -1,13 +1,10 @@
-from pybit.unified_trading import HTTP
-from asdf import (
-    get_dataframe,
-    get_full_dataframe,
-    get_signal_for_candle,
-    SignalType,
-    Signal,
-)
 import matplotlib.pyplot as plt
-from constants import API_KEY, SECRET_KEY, TAKE_PROFIT, STOP_LOSS, SYMBOL, SCALE, RANGE
+from pybit.unified_trading import HTTP
+
+from asdf import (Signal, SignalType, get_dataframe, get_full_dataframe,
+                  get_signal_for_candle)
+from constants import (API_KEY, RANGE, SCALE, SECRET_KEY, STOP_LOSS, SYMBOL,
+                       TAKE_PROFIT)
 
 
 def main():

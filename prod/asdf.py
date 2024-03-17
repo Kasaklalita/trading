@@ -1,9 +1,11 @@
+from copy import deepcopy
+from enum import Enum
+from typing import Dict
+
 import pandas as pd
 import pandas_ta as ta
-from enum import Enum
-from copy import deepcopy
-from constants import TAKE_PROFIT, STOP_LOSS, INTERVAL, LIMIT
-from typing import Dict
+
+from constants import INTERVAL, LIMIT, STOP_LOSS, TAKE_PROFIT
 
 
 class SignalType(Enum):
@@ -68,19 +70,21 @@ class Signal:
 
 def analyze_symbol(session, bot, symbol: str, current_signals: Dict[str, Signal], interval: int = INTERVAL, limit: int = LIMIT, take_profit: int = TAKE_PROFIT, stop_loss: int = STOP_LOSS):
     df = get_dataframe(session, symbol, interval, limit)
-
+    print('asfasfsdafasfsdafs')
     prev_signal = current_signals.get(symbol, Signal())
 
     signal: Signal = get_macd_signal(
         df,
-        0,
+        1,
         take_profit=take_profit,
         stop_loss=stop_loss,
     )
-    if signal.type == SignalType.LONG and prev_signal.unix != signal.unix:
+    if signal.type == SignalType.LONG and prev_signal.datetime != signal.datetime:
+        print(prev_signal.datetime, signal.datetime)
         current_signals[symbol] = signal
         bot.notify(signal.__str__())
-    elif signal.type == SignalType.SHORT and prev_signal.unix != signal.unix:
+    elif signal.type == SignalType.SHORT and prev_signal.datetime != signal.datetime:
+        print(prev_signal.datetime, signal.datetime)
         current_signals[symbol] = signal
         bot.notify(signal.__str__())
     else:

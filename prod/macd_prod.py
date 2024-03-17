@@ -1,13 +1,12 @@
-from pybit.unified_trading import HTTP
-from constants import SYMBOLS
-from asdf import (
-    Signal,
-    analyze_symbol
-)
-from time import sleep
-from bot import TradeBot
-from typing import Dict
 import threading
+from time import sleep
+from typing import Dict
+
+from pybit.unified_trading import HTTP
+
+from asdf import Signal, analyze_symbol
+from bot import TradeBot
+from constants import SYMBOLS
 
 
 def main():
